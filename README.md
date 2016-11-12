@@ -54,7 +54,8 @@ public interface WorldMapping {
 
 We can then use the generated class to interface with a `World` instance:
 ```Java
-WorldMapping myWorld = new WorldMapping$NMS(originalWorld);
+NMSWrapper wrapper = new NMSWrapper();
+WorldMapping myWorld = wrapper.wrap(originalWorld, WorldMapping.class);
 myWorld.entitiesToTick();
 ```
 

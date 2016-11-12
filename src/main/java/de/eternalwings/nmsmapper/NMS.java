@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
  * This annotation specifies that an interface is to be considered as a bridge to an NMS entity.
  *
  */
-@Retention(RetentionPolicy.SOURCE)
+@Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface NMS {
     String value();
