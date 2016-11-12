@@ -60,6 +60,5 @@ myWorld.entitiesToTick();
 
 ## TODO
 
-- [ ] If multiple methods with same name, try to get the one with the same params
 - [ ] Generated class should extend the NMS class
 - [ ] Create static methods to get the mapped class from an existing NMS instance

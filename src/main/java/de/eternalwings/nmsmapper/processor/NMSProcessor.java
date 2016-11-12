@@ -90,13 +90,9 @@ public class NMSProcessor extends BaseProcessor {
                     } else {
                         ExecutableElement targetMethod;
                         try {
-                            targetMethod = this.getMethod(targetType.element, methodName);
+                            targetMethod = this.findSuitableMethod(methodName, mapping.method, targetType.element);
                         } catch (IllegalArgumentException e) {
                             this.getMessager().printMessage(Diagnostic.Kind.ERROR, "Mapped method " + methodName + " does not exist.", mapping.method, mapping.mappingAnnotation, methodNameValue);
-                            return false;
-                        }
-
-                        if (!this.ensureSameSignature(mapping.method, targetMethod)) {
                             return false;
                         }
 
@@ -143,36 +139,39 @@ public class NMSProcessor extends BaseProcessor {
         return builder.build();
     }
 
-    private boolean ensureSameSignature(ExecutableElement method, ExecutableElement targetMethod) {
+    private ExecutableElement findSuitableMethod(String name, ExecutableElement matchingElement, TypeElement target) {
+        List<? extends VariableElement> interfaceParameters = matchingElement.getParameters();
 
-        TypeMirror interfaceReturn = this.getPropertyType(method);
-        TypeMirror targetReturn = this.getPropertyType(targetMethod);
-        if(!this.getTypeUtils().isSameType(interfaceReturn, targetReturn)) {
-            this.getMessager().printMessage(Diagnostic.Kind.ERROR, "Interface return and target return type does not match.", method);
-            return false;
-        }
+        methodLoop:
+        for(ExecutableElement method : ElementFilter.methodsIn(target.getEnclosedElements())) {
+            if(method.getSimpleName().toString().equals(name)) {
+                List<? extends VariableElement> targetParameters = method.getParameters();
+                if(targetParameters.size() != interfaceParameters.size()) {
+                    continue;
+                }
 
-        List<? extends VariableElement> interfaceMethodParameters = method.getParameters();
-        List<? extends VariableElement> targetMethodParameters = targetMethod.getParameters();
+                for(int i = 0; i < interfaceParameters.size(); i++) {
+                    VariableElement interfaceParameter = interfaceParameters.get(i);
+                    VariableElement targetParameter = targetParameters.get(i);
 
-        if(interfaceMethodParameters.size() != targetMethodParameters.size()) {
-            this.getMessager().printMessage(Diagnostic.Kind.ERROR, "Interface method and target method do not have the same amount of parameters.", method);
-            return false;
-        }
+                    TypeMirror interfaceType = this.getPropertyType(interfaceParameter);
+                    TypeMirror targetType = this.getPropertyType(targetParameter);
+                    if(!this.getTypeUtils().isSameType(interfaceType, targetType)) {
+                        continue methodLoop;
+                    }
+                }
 
-        for(int i = 0; i < interfaceMethodParameters.size(); i++) {
-            VariableElement interfaceParameter = interfaceMethodParameters.get(i);
-            VariableElement targetParameter = targetMethodParameters.get(i);
+                TypeMirror interfaceReturn = this.getPropertyType(matchingElement);
+                TypeMirror targetReturn = this.getPropertyType(method);
+                if(!this.getTypeUtils().isSameType(interfaceReturn, targetReturn)) {
+                    continue;
+                }
 
-            TypeMirror interfaceType = this.getPropertyType(interfaceParameter);
-            TypeMirror targetType = this.getPropertyType(targetParameter);
-            if(!this.getTypeUtils().isSameType(interfaceType, targetType)) {
-                this.getMessager().printMessage(Diagnostic.Kind.ERROR, "Parameter type does not match target method parmeter type.", interfaceParameter);
-                return false;
+                return method;
             }
         }
 
-        return true;
+        throw new IllegalArgumentException("No suitable method available.");
     }
 
     private List<NMSMethodMapping> getMethodMappings(ElementTypePair sourceInterface) {

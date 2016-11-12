@@ -71,6 +71,8 @@ public abstract class BaseProcessor extends AbstractProcessor {
                 return ((VariableElement) element).asType();
             case METHOD:
                 return ((ExecutableElement) element).getReturnType();
+            case PARAMETER:
+                return ((VariableElement) element).asType();
             default:
                 return null;
         }
