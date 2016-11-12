@@ -100,7 +100,7 @@ public class NMSProcessor extends BaseProcessor {
                     }
                 }
 
-                String newTypeName = info.sourceInterface.element.getSimpleName() + NMS_TYPE_SUFFIX;
+                String newTypeName = buildNMSWrapperName(info.sourceInterface.element.getSimpleName().toString());
                 TypeSpec resultType = this.buildType(newTypeName, info.sourceInterface, targetType, generators);
                 this.writeType(resultType, this.getPackage(info.sourceInterface.element));
             }
@@ -120,13 +120,14 @@ public class NMSProcessor extends BaseProcessor {
     }
 
     private TypeSpec buildType(String typeName, ElementTypePair interfaceType, ElementTypePair targetType, List<MappingGenerator> generators) {
-        TypeSpec.Builder builder = TypeSpec.classBuilder(typeName);
+        TypeSpec.Builder builder = TypeSpec.classBuilder(typeName).addModifiers(Modifier.PUBLIC);
 
         builder = builder.addSuperinterface(TypeName.get(interfaceType.type));
         String wrappedEntityFieldName = WRAPPED_ENTITY_FIELD_NAME;
         TypeName targetTypeName = TypeName.get(targetType.type);
         FieldSpec wrappedEntityField = FieldSpec.builder(targetTypeName, wrappedEntityFieldName, Modifier.FINAL).build();
-        MethodSpec constructor = MethodSpec.constructorBuilder().addParameter(targetTypeName, wrappedEntityFieldName)
+        MethodSpec constructor = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC)
+                .addParameter(targetTypeName, wrappedEntityFieldName)
                 .addStatement("this.$N = $N", wrappedEntityFieldName, wrappedEntityFieldName)
                 .build();
 
@@ -206,5 +207,9 @@ public class NMSProcessor extends BaseProcessor {
         }
 
         return mappings;
+    }
+
+    public static String buildNMSWrapperName(String currentTypeName) {
+        return currentTypeName + NMS_TYPE_SUFFIX;
     }
 }
