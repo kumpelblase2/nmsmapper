@@ -63,3 +63,4 @@ myWorld.entitiesToTick();
 
 - [ ] Generated class should extend the NMS class
 - [ ] Create static methods to get the mapped class from an existing NMS instance
+- [ ] Handle getter and setter for fields

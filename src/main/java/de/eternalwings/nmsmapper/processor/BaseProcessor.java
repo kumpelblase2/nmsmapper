@@ -83,6 +83,10 @@ public abstract class BaseProcessor extends AbstractProcessor {
         return qualifiedName.substring(0, qualifiedName.lastIndexOf("."));
     }
 
+    protected boolean isAnnotationValueNull(AnnotationValue annotationValue) {
+        return annotationValue == null || annotationValue.getValue() == null;
+    }
+
     @Override
     public Set<String> getSupportedAnnotationTypes() {
         return new HashSet<>(Collections.singletonList(NMS.class.getCanonicalName()));

@@ -6,9 +6,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.SOURCE)
-@Target(ElementType.METHOD)
-public @interface NMSMethod {
-    String value() default "<auto>";
-
-    boolean isField() default false;
+@Target({ElementType.PARAMETER, ElementType.METHOD})
+public @interface NMSWrap {
 }

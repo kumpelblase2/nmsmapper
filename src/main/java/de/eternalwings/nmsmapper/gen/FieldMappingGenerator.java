@@ -14,7 +14,7 @@ public class FieldMappingGenerator implements MappingGenerator {
     }
 
     @Override
-    public MethodSpec generate(String targetEntityField) {
+    public MethodSpec generateInterfaceMapping(String targetEntityField) {
         String methodName = this.mappingInfo.methodMapping.method.getSimpleName().toString();
         TypeName targetTypeName = TypeName.get(this.mappingInfo.targetField.asType());
         String targetFieldName = this.mappingInfo.targetField.getSimpleName().toString();
@@ -24,5 +24,10 @@ public class FieldMappingGenerator implements MappingGenerator {
                 .returns(targetTypeName)
                 .addStatement("return this.$N.$N", targetEntityField, targetFieldName)
                 .build();
+    }
+
+    @Override
+    public MethodSpec generateClassMapping() {
+        return null;
     }
 }

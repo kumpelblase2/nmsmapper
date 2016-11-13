@@ -4,10 +4,10 @@ import javax.lang.model.element.AnnotationMirror;
 
 public class NMSMappingInfo {
     public final AnnotationMirror nmsAnnotation;
-    public final ElementTypePair sourceInterface;
+    public final ElementTypePair sourceAbstractType;
 
-    public NMSMappingInfo(AnnotationMirror nmsAnnotation, ElementTypePair sourceInterface) {
+    public NMSMappingInfo(AnnotationMirror nmsAnnotation, ElementTypePair sourceAbstractType) {
         this.nmsAnnotation = nmsAnnotation;
-        this.sourceInterface = sourceInterface;
+        this.sourceAbstractType = sourceAbstractType;
     }
 }

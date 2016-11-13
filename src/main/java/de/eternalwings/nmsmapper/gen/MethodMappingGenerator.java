@@ -4,6 +4,7 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
 import de.eternalwings.nmsmapper.model.MethodMapping;
 
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.VariableElement;
 import java.util.List;
@@ -16,7 +17,7 @@ public class MethodMappingGenerator implements MappingGenerator {
     }
 
     @Override
-    public MethodSpec generate(String targetEntityFieldName) {
+    public MethodSpec generateInterfaceMapping(String targetEntityFieldName) {
         String methodName = this.mappingInfo.methodMapping.method.getSimpleName().toString();
         TypeName targetReturnType = TypeName.get(this.mappingInfo.targetMethod.getReturnType());
         MethodSpec.Builder builder = MethodSpec.methodBuilder(methodName)
@@ -25,23 +26,46 @@ public class MethodMappingGenerator implements MappingGenerator {
                 .returns(targetReturnType);
 
         builder = this.buildParameters(builder);
-        builder = this.buildStatement(builder, targetReturnType, targetEntityFieldName);
+        builder = this.buildStatement(builder, targetReturnType, targetEntityFieldName, this.mappingInfo.targetMethod);
 
         return builder.build();
     }
 
-    private MethodSpec.Builder buildStatement(MethodSpec.Builder builder, TypeName targetTypeName, String targetEntityFieldName) {
+    @Override
+    public MethodSpec generateClassMapping() {
+        String targetMethodName = this.mappingInfo.targetMethod.getSimpleName().toString();
+        TypeName targetReturnType = TypeName.get(this.mappingInfo.targetMethod.getReturnType());
+        MethodSpec.Builder builder = MethodSpec.methodBuilder(targetMethodName)
+                .addModifiers(Modifier.FINAL, Modifier.PUBLIC)
+                .addAnnotation(Override.class)
+                .returns(targetReturnType);
+
+        builder = this.buildParameters(builder);
+        builder = this.buildStatement(builder, targetReturnType, null, this.mappingInfo.methodMapping.method);
+
+        return builder.build();
+    }
+
+    private MethodSpec.Builder buildStatement(MethodSpec.Builder builder, TypeName returnTypeName, String targetEntityFieldName, ExecutableElement targetMethod) {
         String methodCall = "";
         int parameterCount = this.getParameters().size();
         for(int i = 1; i <= parameterCount; i++) {
             methodCall += (parameterCount > 1 ? ", " : "") + "p" + i;
         }
 
-        String targetMethodName = this.mappingInfo.targetMethod.getSimpleName().toString();
-        if(targetTypeName.equals(TypeName.VOID)) {
-            return builder.addStatement("this.$N.$N(" + methodCall + ")", targetEntityFieldName, targetMethodName);
+        String targetMethodName = targetMethod.getSimpleName().toString();
+        if(returnTypeName.equals(TypeName.VOID)) {
+            if(targetEntityFieldName != null) {
+                return builder.addStatement("this.$N.$N(" + methodCall + ")", targetEntityFieldName, targetMethodName);
+            } else {
+                return builder.addStatement("this.$N(" + methodCall + ")", targetMethodName);
+            }
         } else {
-            return builder.addStatement("return this.$N.$N(" + methodCall + ")", targetEntityFieldName, targetMethodName);
+            if(targetEntityFieldName != null) {
+                return builder.addStatement("return this.$N.$N(" + methodCall + ")", targetEntityFieldName, targetMethodName);
+            } else {
+                return builder.addStatement("this.$N(" + methodCall + ")", targetMethod);
+            }
         }
     }
 
