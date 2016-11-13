@@ -89,20 +89,28 @@ public class NMSProcessor extends BaseProcessor {
                 throw new MappingException();
             }
 
-            if(mapping.method.getParameters().size() > 0) {
-                this.getMessager().printMessage(Diagnostic.Kind.ERROR, "Field mappings may not have any method parameters.", mapping.method.getParameters().get(0));
+            if(mapping.method.getParameters().size() > 1) {
+                this.getMessager().printMessage(Diagnostic.Kind.ERROR, "Field mappings may not have any extra method parameters.", mapping.method.getParameters().get(1));
                 throw new MappingException();
             }
 
-            TypeMirror methodReturnType = this.getPropertyType(mapping.method);
-            TypeMirror targetFieldType = this.getPropertyType(targetField);
+            boolean isGetter = mapping.method.getParameters().size() == 0;
+            TypeMirror returnType;
+            TypeMirror targetFieldType;
+            if(isGetter) {
+                returnType = this.getPropertyType(mapping.method);
+                targetFieldType = this.getPropertyType(targetField);
+            } else {
+                returnType = this.getPropertyType(targetField);
+                targetFieldType = this.getPropertyType(mapping.method.getParameters().get(0));
+            }
 
-            if(!this.getTypeUtils().isSameType(methodReturnType, targetFieldType)) {
+            if (!this.getTypeUtils().isSameType(returnType, targetFieldType)) {
                 this.getMessager().printMessage(Diagnostic.Kind.ERROR, "Interface method and target field are of different types.", mapping.method);
                 throw new MappingException();
             }
 
-            return new FieldMappingGenerator(new FieldMapping(targetField, mapping));
+            return new FieldMappingGenerator(new FieldMapping(targetField, mapping), isGetter);
         } else {
             ExecutableElement targetMethod;
             try {
