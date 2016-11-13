@@ -10,81 +10,48 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.*;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 public abstract class BaseProcessor extends AbstractProcessor {
 
     protected ElementTypePair getType(String className) {
-        TypeElement element = this.getElementUtils().getTypeElement(className);
-        if(element == null) {
-            return null;
-        }
-
-        DeclaredType type = this.getTypeUtils().getDeclaredType(element);
-        return new ElementTypePair(element, type);
+        return TypeHelper.getType(this.getTypeUtils(), this.getElementUtils(), className);
     }
 
     protected AnnotationMirror getAnnotation(Element element, DeclaredType annotationType) {
-        for(AnnotationMirror mirror : element.getAnnotationMirrors()) {
-            if(this.getTypeUtils().isSameType(mirror.getAnnotationType(), annotationType)) {
-                return mirror;
-            }
-        }
-
-        return null;
+        return AnnotationHelper.getAnnotation(this.getTypeUtils(), element, annotationType);
     }
 
     protected ExecutableElement getMethod(Element element, String methodName) {
-        for(ExecutableElement executableElement : ElementFilter.methodsIn(element.getEnclosedElements())) {
-            if(executableElement.getSimpleName().toString().equals(methodName)) {
-                return executableElement;
-            }
-        }
-
-        throw new IllegalArgumentException("Unknown method " + methodName + " on " + element.getSimpleName());
+        return ElementHelper.getMethod(element, methodName);
     }
 
     protected VariableElement getField(Element element, String fieldName) {
-        for(VariableElement variableElement : ElementFilter.fieldsIn(element.getEnclosedElements())) {
-            if(variableElement.getSimpleName().toString().equals(fieldName)) {
-                return variableElement;
-            }
-        }
-
-        throw new IllegalArgumentException("Unknown field " + fieldName + " on " + element.getSimpleName());
+        return ElementHelper.getField(element, fieldName);
     }
 
     protected AnnotationValue getAnnotationProperty(AnnotationMirror mirror, String methodName) {
-        Map<? extends ExecutableElement, ? extends AnnotationValue> elementValues = mirror.getElementValues();
-        return elementValues.get(this.getMethod((TypeElement) mirror.getAnnotationType().asElement(), methodName));
+        return AnnotationHelper.getAnnotationProperty(mirror, methodName);
     }
 
     protected TypeMirror getPropertyType(Element element) {
-        switch (element.getKind()) {
-            case FIELD:
-                return ((VariableElement) element).asType();
-            case METHOD:
-                return ((ExecutableElement) element).getReturnType();
-            case PARAMETER:
-                return ((VariableElement) element).asType();
-            default:
-                return null;
-        }
+        return ElementHelper.getPropertyType(element);
     }
 
     protected String getPackage(TypeElement element) {
-        String qualifiedName = element.getQualifiedName().toString();
-        return qualifiedName.substring(0, qualifiedName.lastIndexOf("."));
+        return ElementHelper.getPackage(element);
     }
 
     protected boolean isAnnotationValueNull(AnnotationValue annotationValue) {
-        return annotationValue == null || annotationValue.getValue() == null;
+        return AnnotationHelper.isAnnotationValueNull(annotationValue);
+    }
+
+    protected TypeMirror getSuperclass(TypeMirror type) {
+        return TypeHelper.getSuperclass(this.getTypeUtils(), type);
     }
 
     @Override

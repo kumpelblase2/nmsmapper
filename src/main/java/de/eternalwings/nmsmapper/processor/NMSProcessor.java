@@ -33,9 +33,11 @@ public class NMSProcessor extends BaseProcessor {
 
     public boolean process(Set<? extends TypeElement> set, RoundEnvironment roundEnvironment) {
         Collection<NMSMappingInfo> mappings = this.getFoundMappingTypes(roundEnvironment);
+        Map<String, String> wrapperMapping = this.getWrapperMapping(mappings);
+        MappingEnvironment environment = new MappingEnvironment(wrapperMapping, mappings, this);
         for(NMSMappingInfo info : mappings) {
             try {
-                this.handleMapping(info);
+                this.handleMapping(info, environment);
             } catch(MappingException ignored) {
             }
         }
@@ -43,7 +45,17 @@ public class NMSProcessor extends BaseProcessor {
         return false;
     }
 
-    private void handleMapping(NMSMappingInfo info) {
+    private Map<String, String> getWrapperMapping(Collection<NMSMappingInfo> mappings) {
+        Map<String, String> mapping = new HashMap<>();
+        for (NMSMappingInfo mappingInfo : mappings) {
+            String targetClass = this.findTargetType(mappingInfo, AnnotationHelper.getAnnotationProperty(mappingInfo.nmsAnnotation, "value")).element.getQualifiedName().toString();
+            mapping.put(mappingInfo.sourceAbstractType.element.getQualifiedName().toString(), targetClass);
+        }
+
+        return mapping;
+    }
+
+    private void handleMapping(NMSMappingInfo info, MappingEnvironment env) {
         AnnotationValue targetValue = this.getAnnotationProperty(info.nmsAnnotation, "value");
         ElementTypePair targetType = this.findTargetType(info, targetValue);
 
@@ -55,7 +67,7 @@ public class NMSProcessor extends BaseProcessor {
         List<NMSMethodMapping> methodMappings = this.getMethodMappings(info.sourceAbstractType);
         List<MappingGenerator> generators = new ArrayList<>();
         for(NMSMethodMapping mapping : methodMappings) {
-            generators.add(this.getGeneratorForMethod(mapping, targetType));
+            generators.add(this.getGeneratorForMethod(mapping, targetType, env));
         }
 
         String newTypeName = buildNMSWrapperName(info.sourceAbstractType.element.getSimpleName().toString());
@@ -69,7 +81,7 @@ public class NMSProcessor extends BaseProcessor {
         this.writeType(resultType, this.getPackage(info.sourceAbstractType.element));
     }
 
-    private MappingGenerator getGeneratorForMethod(NMSMethodMapping mapping, ElementTypePair targetType) {
+    private MappingGenerator getGeneratorForMethod(NMSMethodMapping mapping, ElementTypePair targetType, MappingEnvironment env) {
         AnnotationValue methodNameValue = this.getAnnotationProperty(mapping.mappingAnnotation, "value");
         if(this.isAnnotationValueNull(methodNameValue)) {
             this.getMessager().printMessage(Diagnostic.Kind.ERROR, "Missing method name in @NMSMethod", mapping.method, mapping.mappingAnnotation, methodNameValue);
@@ -114,13 +126,13 @@ public class NMSProcessor extends BaseProcessor {
         } else {
             ExecutableElement targetMethod;
             try {
-                targetMethod = this.findSuitableMethod(methodName, mapping.method, targetType.element);
+                targetMethod = this.findSuitableMethod(methodName, mapping.method, targetType.element, env);
             } catch (IllegalArgumentException e) {
                 this.getMessager().printMessage(Diagnostic.Kind.ERROR, "Mapped method " + methodName + " does not exist.", mapping.method, mapping.mappingAnnotation, methodNameValue);
                 throw new MappingException();
             }
 
-            return new MethodMappingGenerator(new MethodMapping(targetMethod, mapping));
+            return new MethodMappingGenerator(new MethodMapping(targetMethod, mapping), this.wrapParameterAnnotation, env);
         }
     }
 
@@ -218,7 +230,7 @@ public class NMSProcessor extends BaseProcessor {
         return specs;
     }
 
-    private ExecutableElement findSuitableMethod(String name, ExecutableElement matchingElement, TypeElement target) {
+    private ExecutableElement findSuitableMethod(String name, ExecutableElement matchingElement, TypeElement target, MappingEnvironment env) {
         List<? extends VariableElement> interfaceParameters = matchingElement.getParameters();
 
         methodLoop:
@@ -236,7 +248,14 @@ public class NMSProcessor extends BaseProcessor {
                     TypeMirror interfaceType = this.getPropertyType(interfaceParameter);
                     TypeMirror targetType = this.getPropertyType(targetParameter);
                     if(!this.getTypeUtils().isSameType(interfaceType, targetType)) {
-                        continue methodLoop;
+                        AnnotationMirror wrappingAnnotation = this.getAnnotation(interfaceParameter, this.wrapParameterAnnotation.type);
+                        if(wrappingAnnotation != null) {
+                            if(!env.hasMapperFor(interfaceType.toString())) {
+                                continue methodLoop;
+                            }
+                        } else {
+                            continue methodLoop;
+                        }
                     }
                 }
 
