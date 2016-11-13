@@ -254,13 +254,18 @@ public class NMSProcessor extends BaseProcessor {
     }
 
     private List<NMSMethodMapping> getMethodMappings(ElementTypePair sourceInterface) {
+        boolean isInterface = sourceInterface.element.getKind() == ElementKind.INTERFACE;
         List<NMSMethodMapping> mappings = new ArrayList<>();
         List<? extends Element> containedElements = sourceInterface.element.getEnclosedElements();
         for(ExecutableElement method : ElementFilter.methodsIn(containedElements)) {
             AnnotationMirror annotation = this.getAnnotation(method, this.mappedMethodAnnotation.type);
             if(annotation == null) {
-                this.getMessager().printMessage(Diagnostic.Kind.ERROR, "Method in interface is missing @NMSMethod annotation.", method);
-                return Collections.emptyList();
+                if(isInterface) {
+                    this.getMessager().printMessage(Diagnostic.Kind.ERROR, "Method in interface is missing @NMSMethod annotation.", method);
+                    return Collections.emptyList();
+                } else {
+                    continue;
+                }
             }
 
             NMSMethodMapping mapping = new NMSMethodMapping(method, annotation);
