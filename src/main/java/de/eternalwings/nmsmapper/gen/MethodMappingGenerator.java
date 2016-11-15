@@ -83,7 +83,7 @@ public class MethodMappingGenerator implements MappingGenerator {
             if(targetEntityFieldName != null) {
                 return builder.addStatement("return this.$N.$N(" + methodCall + ")", targetEntityFieldName, targetMethodName);
             } else {
-                return builder.addStatement("this.$N(" + methodCall + ")", targetMethod);
+                return builder.addStatement("return this.$N(" + methodCall + ")", targetMethod);
             }
         }
     }
