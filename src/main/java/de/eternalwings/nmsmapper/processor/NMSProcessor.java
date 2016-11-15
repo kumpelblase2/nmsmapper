@@ -33,19 +33,20 @@ public class NMSProcessor extends BaseProcessor {
 
     public boolean process(Set<? extends TypeElement> set, RoundEnvironment roundEnvironment) {
         Collection<NMSMappingInfo> mappings = this.getFoundMappingTypes(roundEnvironment);
-        Map<String, String> wrapperMapping = this.getWrapperMapping(mappings);
+        Map<String, String> wrapperMapping = this.getKnownMappers(mappings);
         MappingEnvironment environment = new MappingEnvironment(wrapperMapping, mappings, this);
         for(NMSMappingInfo info : mappings) {
             try {
                 this.handleMapping(info, environment);
-            } catch(MappingException ignored) {
+            } catch(WrappingException e) {
+                e.printError(this.getMessager());
             }
         }
 
         return false;
     }
 
-    private Map<String, String> getWrapperMapping(Collection<NMSMappingInfo> mappings) {
+    private Map<String, String> getKnownMappers(Collection<NMSMappingInfo> mappings) {
         Map<String, String> mapping = new HashMap<>();
         for (NMSMappingInfo mappingInfo : mappings) {
             String targetClass = this.findTargetType(mappingInfo, AnnotationHelper.getAnnotationProperty(mappingInfo.nmsAnnotation, "value")).element.getQualifiedName().toString();
@@ -84,8 +85,7 @@ public class NMSProcessor extends BaseProcessor {
     private MappingGenerator getGeneratorForMethod(NMSMethodMapping mapping, ElementTypePair targetType, MappingEnvironment env) {
         AnnotationValue methodNameValue = this.getAnnotationProperty(mapping.mappingAnnotation, "value");
         if(this.isAnnotationValueNull(methodNameValue)) {
-            this.getMessager().printMessage(Diagnostic.Kind.ERROR, "Missing method name in @NMSMethod", mapping.method, mapping.mappingAnnotation, methodNameValue);
-            throw new MappingException();
+            throw new WrappingException("Missing method name in @NMSMethod", mapping.method, mapping.mappingAnnotation, methodNameValue);
         }
 
         AnnotationValue isFieldValue = this.getAnnotationProperty(mapping.mappingAnnotation, "isField");
@@ -97,13 +97,11 @@ public class NMSProcessor extends BaseProcessor {
             try {
                 targetField = this.getField(targetType.element, methodName);
             } catch (IllegalArgumentException e) {
-                this.getMessager().printMessage(Diagnostic.Kind.ERROR, "Mapped field " + methodName + " does not exist.", mapping.method, mapping.mappingAnnotation, methodNameValue);
-                throw new MappingException();
+                throw new WrappingException("Mapped field " + methodName + " does not exist.", mapping.method, mapping.mappingAnnotation, methodNameValue);
             }
 
             if(mapping.method.getParameters().size() > 1) {
-                this.getMessager().printMessage(Diagnostic.Kind.ERROR, "Field mappings may not have any extra method parameters.", mapping.method.getParameters().get(1));
-                throw new MappingException();
+                throw new WrappingException("Field mappings may not have any extra method parameters.", mapping.method.getParameters().get(1));
             }
 
             boolean isGetter = mapping.method.getParameters().size() == 0;
@@ -118,8 +116,7 @@ public class NMSProcessor extends BaseProcessor {
             }
 
             if (!this.getTypeUtils().isSameType(returnType, targetFieldType)) {
-                this.getMessager().printMessage(Diagnostic.Kind.ERROR, "Interface method and target field are of different types.", mapping.method);
-                throw new MappingException();
+                throw new WrappingException("Interface method and target field are of different types.", mapping.method);
             }
 
             return new FieldMappingGenerator(new FieldMapping(targetField, mapping), isGetter);
@@ -128,8 +125,7 @@ public class NMSProcessor extends BaseProcessor {
             try {
                 targetMethod = this.findSuitableMethod(methodName, mapping.method, targetType.element, env);
             } catch (IllegalArgumentException e) {
-                this.getMessager().printMessage(Diagnostic.Kind.ERROR, "Mapped method " + methodName + " does not exist.", mapping.method, mapping.mappingAnnotation, methodNameValue);
-                throw new MappingException();
+                throw new WrappingException("Mapped method " + methodName + " does not exist.", mapping.method, mapping.mappingAnnotation, methodNameValue);
             }
 
             return new MethodMappingGenerator(new MethodMapping(targetMethod, mapping), this.wrapParameterAnnotation, env);
@@ -139,16 +135,14 @@ public class NMSProcessor extends BaseProcessor {
     private ElementTypePair findTargetType(NMSMappingInfo info, AnnotationValue targetValue) {
         if(this.isAnnotationValueNull(targetValue)) {
             if(info.sourceAbstractType.element.getKind() == ElementKind.INTERFACE) {
-                this.getMessager().printMessage(Diagnostic.Kind.ERROR, "Missing target class", info.sourceAbstractType.element, info.nmsAnnotation, targetValue);
-                throw new MappingException();
+                throw new WrappingException("Missing target class", info.sourceAbstractType.element, info.nmsAnnotation, targetValue);
             }
 
             String targetClass = info.sourceAbstractType.element.getSuperclass().toString();
             return this.getType(targetClass);
         } else {
             if(info.sourceAbstractType.element.getKind() != ElementKind.INTERFACE) {
-                this.getMessager().printMessage(Diagnostic.Kind.ERROR, "Cannot specify target with class", info.sourceAbstractType.element, info.nmsAnnotation, targetValue);
-                throw new MappingException();
+                throw new WrappingException("Cannot specify target with class", info.sourceAbstractType.element, info.nmsAnnotation, targetValue);
             }
 
             String targetName = ((String) targetValue.getValue());
