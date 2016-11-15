@@ -11,11 +11,34 @@ repositories {
 }
 
 publishing {
+    repositories {
+        maven {
+            credentials {
+                username = nexusUsername
+                password = nexusPassword
+            }
+
+            if(project.version.endsWith('-SNAPSHOT')) {
+                url "$nexusURL/repository/maven-snapshots/"
+            } else {
+                url "$nexusURL/repository/maven-releases/"
+            }
+        }
+    }
+
     publications {
         mavenJava(MavenPublication) {
             from components.java
+
+            artifact sourceJar {
+                classifier "sources"
+            }
         }
     }
+}
+
+task sourceJar(type: Jar) {
+    from sourceSets.main.allJava
 }
 
 dependencies {
