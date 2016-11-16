@@ -2,7 +2,9 @@ package de.eternalwings.nmsmapper.gen;
 
 import com.squareup.javapoet.MethodSpec;
 
+import java.util.Collection;
+
 public interface MappingGenerator {
-    MethodSpec generateInterfaceMapping(String targetEntityField);
-    MethodSpec generateClassMapping();
+    Collection<MethodSpec> generateInterfaceMapping(String targetEntityField);
+    Collection<MethodSpec> generateClassMapping();
 }

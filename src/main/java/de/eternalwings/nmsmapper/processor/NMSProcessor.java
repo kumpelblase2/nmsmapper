@@ -175,7 +175,7 @@ public class NMSProcessor extends BaseProcessor {
         builder = builder.addField(wrappedEntityField).addMethod(constructor);
 
         for (MappingGenerator generator : generators) {
-            builder = builder.addMethod(generator.generateInterfaceMapping(wrappedEntityFieldName));
+            builder.addMethods(generator.generateInterfaceMapping(wrappedEntityFieldName));
         }
 
         return builder.build();
@@ -191,7 +191,7 @@ public class NMSProcessor extends BaseProcessor {
         }
 
         for (MappingGenerator generator : generators) {
-            builder = builder.addMethod(generator.generateClassMapping());
+            builder = builder.addMethods(generator.generateClassMapping());
         }
 
         return builder.build();

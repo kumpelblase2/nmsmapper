@@ -5,6 +5,8 @@ import com.squareup.javapoet.TypeName;
 import de.eternalwings.nmsmapper.model.FieldMapping;
 
 import javax.lang.model.element.Modifier;
+import java.util.Collection;
+import java.util.Collections;
 
 public class FieldMappingGenerator implements MappingGenerator {
     private final FieldMapping mappingInfo;
@@ -20,18 +22,16 @@ public class FieldMappingGenerator implements MappingGenerator {
     }
 
     @Override
-    public MethodSpec generateInterfaceMapping(String targetEntityField) {
+    public Collection<MethodSpec> generateInterfaceMapping(String targetEntityField) {
         String targetFieldName = this.mappingInfo.targetField.getSimpleName().toString();
         MethodSpec.Builder builder = this.createSignature();
         if(this.isGetter) {
-            return builder
-                    .addStatement("return this.$N.$N", targetEntityField, targetFieldName)
-                    .build();
+            builder = builder.addStatement("return this.$N.$N", targetEntityField, targetFieldName);
         } else {
-            return builder
-                    .addStatement("this.$N.$N = $N", targetEntityField, targetFieldName, "value")
-                    .build();
+            builder = builder.addStatement("this.$N.$N = $N", targetEntityField, targetFieldName, "value");
         }
+
+        return Collections.singletonList(builder.build());
     }
 
     private MethodSpec.Builder prepareBuilder(String methodName) {
@@ -41,18 +41,16 @@ public class FieldMappingGenerator implements MappingGenerator {
     }
 
     @Override
-    public MethodSpec generateClassMapping() {
+    public Collection<MethodSpec> generateClassMapping() {
         String targetFieldName = this.mappingInfo.targetField.getSimpleName().toString();
         MethodSpec.Builder builder = this.createSignature();
         if(this.isGetter) {
-            return builder
-                    .addStatement("return this.$N", targetFieldName)
-                    .build();
+            builder = builder.addStatement("return this.$N", targetFieldName);
         } else {
-            return builder
-                    .addStatement("this.$N = $N", targetFieldName, "value")
-                    .build();
+            builder = builder.addStatement("this.$N = $N", targetFieldName, "value");
         }
+
+        return Collections.singletonList(builder.build());
     }
 
     private MethodSpec.Builder createSignature() {

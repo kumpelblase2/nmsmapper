@@ -14,7 +14,7 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.VariableElement;
-import java.util.List;
+import java.util.*;
 
 public class MethodMappingGenerator implements MappingGenerator {
     private final MethodMapping mappingInfo;
@@ -28,49 +28,55 @@ public class MethodMappingGenerator implements MappingGenerator {
     }
 
     @Override
-    public MethodSpec generateInterfaceMapping(String targetEntityFieldName) {
+    public Collection<MethodSpec> generateInterfaceMapping(String targetEntityFieldName) {
         String methodName = this.mappingInfo.methodMapping.method.getSimpleName().toString();
         TypeName targetReturnType = TypeName.get(this.mappingInfo.targetMethod.getReturnType());
-        MethodSpec.Builder builder = MethodSpec.methodBuilder(methodName)
-                .addModifiers(Modifier.FINAL, Modifier.PUBLIC)
-                .addAnnotation(Override.class)
-                .returns(targetReturnType);
-
-        builder = this.buildParameters(builder);
+        MethodSpec.Builder builder = this.createMethodHeader(methodName, targetReturnType);
         builder = this.buildStatement(builder, targetReturnType, targetEntityFieldName, this.mappingInfo.targetMethod);
 
-        return builder.build();
+        return Collections.singletonList(builder.build());
     }
 
     @Override
-    public MethodSpec generateClassMapping() {
+    public Collection<MethodSpec> generateClassMapping() {
+        List<MethodSpec> methods = new ArrayList<>();
+
         String targetMethodName = this.mappingInfo.targetMethod.getSimpleName().toString();
         TypeName targetReturnType = TypeName.get(this.mappingInfo.targetMethod.getReturnType());
-        MethodSpec.Builder builder = MethodSpec.methodBuilder(targetMethodName)
-                .addModifiers(Modifier.FINAL, Modifier.PUBLIC)
-                .addAnnotation(Override.class)
-                .returns(targetReturnType);
-
-        builder = this.buildParameters(builder);
+        MethodSpec.Builder builder = this.createMethodHeader(targetMethodName, targetReturnType);
         builder = this.buildStatement(builder, targetReturnType, null, this.mappingInfo.methodMapping.method);
 
-        return builder.build();
+        methods.add(builder.build());
+
+        builder = this.createMethodHeader("_" + targetMethodName, targetReturnType);
+        builder = this.buildSuperCall(builder, targetReturnType, this.mappingInfo.methodMapping.method);
+
+        methods.add(builder.build());
+        return methods;
+    }
+
+    private MethodSpec.Builder createMethodHeader(String targetMethodName, TypeName targetReturnType) {
+        MethodSpec.Builder builder;
+        builder = MethodSpec.methodBuilder(targetMethodName).addModifiers(Modifier.FINAL, Modifier.PUBLIC)
+                .addAnnotation(Override.class)
+                .returns(targetReturnType);
+        builder = this.buildParameters(builder);
+        return builder;
+    }
+
+    private MethodSpec.Builder buildSuperCall(MethodSpec.Builder builder, TypeName returnTypeName, ExecutableElement targetMethod) {
+        String methodCall = this.buildMethodCall();
+
+        String targetMethodName = targetMethod.getSimpleName().toString();
+        if(returnTypeName.equals(TypeName.VOID)) {
+            return builder.addStatement("super.$N(" + methodCall + ")", targetMethodName);
+        } else {
+            return builder.addStatement("super.$N(" + methodCall + ")", targetMethod);
+        }
     }
 
     private MethodSpec.Builder buildStatement(MethodSpec.Builder builder, TypeName returnTypeName, String targetEntityFieldName, ExecutableElement targetMethod) {
-        String methodCall = "";
-        List<? extends VariableElement> parameters = this.getParameters();
-        int current = 0;
-        for (VariableElement parameter : parameters) {
-            current += 1;
-            String paramName = "p" + current;
-            methodCall += current > 1 ? ", " : "";
-            if(this.shouldWrap(parameter)) {
-                methodCall += this.wrapCall(paramName, parameter.asType().toString());
-            } else {
-                methodCall += paramName;
-            }
-        }
+        String methodCall = this.buildMethodCall();
 
         String targetMethodName = targetMethod.getSimpleName().toString();
         if(returnTypeName.equals(TypeName.VOID)) {
@@ -86,6 +92,23 @@ public class MethodMappingGenerator implements MappingGenerator {
                 return builder.addStatement("return this.$N(" + methodCall + ")", targetMethod);
             }
         }
+    }
+
+    private String buildMethodCall() {
+        String methodCall = "";
+        List<? extends VariableElement> parameters = this.getParameters();
+        int current = 0;
+        for (VariableElement parameter : parameters) {
+            current += 1;
+            String paramName = "p" + current;
+            methodCall += current > 1 ? ", " : "";
+            if(this.shouldWrap(parameter)) {
+                methodCall += this.wrapCall(paramName, parameter.asType().toString());
+            } else {
+                methodCall += paramName;
+            }
+        }
+        return methodCall;
     }
 
     private List<? extends VariableElement> getParameters() {
