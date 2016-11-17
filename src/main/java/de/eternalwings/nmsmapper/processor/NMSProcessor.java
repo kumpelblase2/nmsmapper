@@ -128,8 +128,32 @@ public class NMSProcessor extends BaseProcessor {
                 throw new WrappingException("Mapped method " + methodName + " does not exist.", mapping.method, mapping.mappingAnnotation, methodNameValue);
             }
 
-            return new MethodMappingGenerator(new MethodMapping(targetMethod, mapping), this.wrapParameterAnnotation, env);
+            boolean requiresSuperMethod = this.requiresSuperCallMethod(mapping.method.getSimpleName().toString(), mapping, targetType.element, env);
+            return new MethodMappingGenerator(new MethodMapping(targetMethod, mapping), this.wrapParameterAnnotation, requiresSuperMethod, env);
         }
+    }
+
+    private boolean requiresSuperCallMethod(String methodName, NMSMethodMapping mapping, TypeElement targetType, MappingEnvironment env) {
+        ElementTypePair mapperTypeForTarget = this.getMapperTypeForTarget(targetType, env);
+        if(mapperTypeForTarget == null) {
+            return false;
+        }
+
+        try {
+            ExecutableElement foundMethod = this.findSuitableMethod("_" + methodName, mapping.method, mapperTypeForTarget.element, env);
+            return foundMethod != null;
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
+    }
+
+    private ElementTypePair getMapperTypeForTarget(TypeElement element, MappingEnvironment env) {
+        String sourceName = env.getMapperFor(element.getQualifiedName().toString());
+        if(sourceName == null) {
+            return null;
+        }
+
+        return TypeHelper.getType(env.getTypeUtils(), env.getElementUtils(), sourceName);
     }
 
     private ElementTypePair findTargetType(NMSMappingInfo info, AnnotationValue targetValue) {

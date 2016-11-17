@@ -20,10 +20,12 @@ public class MethodMappingGenerator implements MappingGenerator {
     private final MethodMapping mappingInfo;
     private final ElementTypePair wrappedMirror;
     private final MappingEnvironment environment;
+    private final boolean requiresSuperMethod;
 
-    public MethodMappingGenerator(MethodMapping mappingInfo, ElementTypePair wrappedMirror, MappingEnvironment environment) {
+    public MethodMappingGenerator(MethodMapping mappingInfo, ElementTypePair wrappedMirror, boolean requiresSuperMethod, MappingEnvironment environment) {
         this.mappingInfo = mappingInfo;
         this.wrappedMirror = wrappedMirror;
+        this.requiresSuperMethod = requiresSuperMethod;
         this.environment = environment;
     }
 
@@ -48,10 +50,13 @@ public class MethodMappingGenerator implements MappingGenerator {
 
         methods.add(builder.build());
 
-        builder = this.createMethodHeader("_" + targetMethodName, targetReturnType);
-        builder = this.buildSuperCall(builder, targetReturnType, this.mappingInfo.methodMapping.method);
+        if(this.requiresSuperMethod) {
+            builder = this.createMethodHeader("_" + this.mappingInfo.methodMapping.method.getSimpleName().toString(), targetReturnType);
+            builder = this.buildSuperCall(builder, targetReturnType, this.mappingInfo.targetMethod);
 
-        methods.add(builder.build());
+            methods.add(builder.build());
+        }
+
         return methods;
     }
 
@@ -71,7 +76,7 @@ public class MethodMappingGenerator implements MappingGenerator {
         if(returnTypeName.equals(TypeName.VOID)) {
             return builder.addStatement("super.$N(" + methodCall + ")", targetMethodName);
         } else {
-            return builder.addStatement("super.$N(" + methodCall + ")", targetMethod);
+            return builder.addStatement("return super.$N(" + methodCall + ")", targetMethodName);
         }
     }
 
@@ -89,7 +94,7 @@ public class MethodMappingGenerator implements MappingGenerator {
             if(targetEntityFieldName != null) {
                 return builder.addStatement("return this.$N.$N(" + methodCall + ")", targetEntityFieldName, targetMethodName);
             } else {
-                return builder.addStatement("return this.$N(" + methodCall + ")", targetMethod);
+                return builder.addStatement("return this.$N(" + methodCall + ")", targetMethodName);
             }
         }
     }

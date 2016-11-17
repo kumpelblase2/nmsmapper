@@ -51,4 +51,14 @@ public class MappingEnvironment {
     public Types getTypeUtils() {
         return processor.getTypeUtils();
     }
+
+    public String getMapperFor(String targetName) {
+        for (Map.Entry<String, String> mapper : this.knownMappers.entrySet()) {
+            if(mapper.getValue().equals(targetName)) {
+                return mapper.getKey();
+            }
+        }
+
+        return null;
+    }
 }

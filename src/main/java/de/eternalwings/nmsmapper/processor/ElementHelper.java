@@ -13,7 +13,11 @@ import javax.lang.model.util.ElementFilter;
 public class ElementHelper {
     public static String getPackage(TypeElement element) {
         String qualifiedName = element.getQualifiedName().toString();
-        return qualifiedName.substring(0, qualifiedName.lastIndexOf("."));
+        if (!qualifiedName.contains(".")) {
+            return "";
+        } else {
+            return qualifiedName.substring(0, qualifiedName.lastIndexOf("."));
+        }
     }
 
     public static TypeMirror getPropertyType(Element element) {
@@ -58,6 +62,11 @@ public class ElementHelper {
     }
 
     public static TypeElement getSuperclass(TypeElement element) {
-        return (TypeElement) ((DeclaredType) element.getSuperclass()).asElement();
+        TypeMirror superclass = element.getSuperclass();
+        if(superclass instanceof DeclaredType) {
+            return (TypeElement) ((DeclaredType) superclass).asElement();
+        } else {
+            return null;
+        }
     }
 }
