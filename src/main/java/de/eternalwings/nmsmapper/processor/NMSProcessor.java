@@ -264,7 +264,7 @@ public class NMSProcessor extends BaseProcessor {
         }
 
         TypeElement superclass = ElementHelper.getSuperclass(target);
-        if(superclass.getSimpleName().contentEquals("Object")) {
+        if(superclass == null || superclass.getSimpleName().contentEquals("Object")) {
             throw new IllegalArgumentException("No suitable method available.");
         } else {
             return findSuitableMethod(name, matchingElement, superclass, env);
