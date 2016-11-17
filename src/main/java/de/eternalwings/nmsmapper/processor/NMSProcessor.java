@@ -263,7 +263,12 @@ public class NMSProcessor extends BaseProcessor {
             }
         }
 
-        throw new IllegalArgumentException("No suitable method available.");
+        TypeElement superclass = ElementHelper.getSuperclass(target);
+        if(superclass.getSimpleName().contentEquals("Object")) {
+            throw new IllegalArgumentException("No suitable method available.");
+        } else {
+            return findSuitableMethod(name, matchingElement, superclass, env);
+        }
     }
 
     private List<NMSMethodMapping> getMethodMappings(ElementTypePair sourceInterface) {
