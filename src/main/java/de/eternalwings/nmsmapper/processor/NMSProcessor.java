@@ -47,7 +47,7 @@ public class NMSProcessor extends BaseProcessor {
     }
 
     private Map<String, String> getKnownMappers(Collection<NMSMappingInfo> mappings) {
-        Map<String, String> mapping = new HashMap<>();
+        Map<String, String> mapping = new HashMap<String, String>();
         for (NMSMappingInfo mappingInfo : mappings) {
             String targetClass = this.findTargetType(mappingInfo, AnnotationHelper.getAnnotationProperty(mappingInfo.nmsAnnotation, "value")).element.getQualifiedName().toString();
             mapping.put(mappingInfo.sourceAbstractType.element.getQualifiedName().toString(), targetClass);
@@ -66,7 +66,7 @@ public class NMSProcessor extends BaseProcessor {
         }
 
         List<NMSMethodMapping> methodMappings = this.getMethodMappings(info.sourceAbstractType);
-        List<MappingGenerator> generators = new ArrayList<>();
+        List<MappingGenerator> generators = new ArrayList<MappingGenerator>();
         for(NMSMethodMapping mapping : methodMappings) {
             generators.add(this.getGeneratorForMethod(mapping, targetType, env));
         }
@@ -198,7 +198,7 @@ public class NMSProcessor extends BaseProcessor {
     }
 
     private List<MethodSpec> buildConstructorsForClass(ElementTypePair targetType) {
-        List<MethodSpec> specs = new ArrayList<>();
+        List<MethodSpec> specs = new ArrayList<MethodSpec>();
 
         for (ExecutableElement constructor : ElementFilter.constructorsIn(targetType.element.getEnclosedElements())) {
             MethodSpec.Builder builder = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
@@ -268,7 +268,7 @@ public class NMSProcessor extends BaseProcessor {
 
     private List<NMSMethodMapping> getMethodMappings(ElementTypePair sourceInterface) {
         boolean isInterface = sourceInterface.element.getKind() == ElementKind.INTERFACE;
-        List<NMSMethodMapping> mappings = new ArrayList<>();
+        List<NMSMethodMapping> mappings = new ArrayList<NMSMethodMapping>();
         List<? extends Element> containedElements = sourceInterface.element.getEnclosedElements();
         for(ExecutableElement method : ElementFilter.methodsIn(containedElements)) {
             AnnotationMirror annotation = this.getAnnotation(method, this.mappedMethodAnnotation.type);
@@ -289,7 +289,7 @@ public class NMSProcessor extends BaseProcessor {
     }
 
     private Collection<NMSMappingInfo> getFoundMappingTypes(RoundEnvironment roundEnvironment) {
-        Collection<NMSMappingInfo> mappings = new ArrayList<>();
+        Collection<NMSMappingInfo> mappings = new ArrayList<NMSMappingInfo>();
         Set<? extends Element> nmsInterfaces = roundEnvironment.getElementsAnnotatedWith(this.nmsAnnotation.element);
         for(TypeElement e : ElementFilter.typesIn(nmsInterfaces)) {
             AnnotationMirror nmsAnnotationElement = this.getAnnotation(e, this.nmsAnnotation.type);

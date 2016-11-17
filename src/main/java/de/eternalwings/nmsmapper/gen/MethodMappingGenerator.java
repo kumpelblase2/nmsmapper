@@ -39,7 +39,7 @@ public class MethodMappingGenerator implements MappingGenerator {
 
     @Override
     public Collection<MethodSpec> generateClassMapping() {
-        List<MethodSpec> methods = new ArrayList<>();
+        List<MethodSpec> methods = new ArrayList<MethodSpec>();
 
         String targetMethodName = this.mappingInfo.targetMethod.getSimpleName().toString();
         TypeName targetReturnType = TypeName.get(this.mappingInfo.targetMethod.getReturnType());

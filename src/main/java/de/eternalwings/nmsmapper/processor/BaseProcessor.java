@@ -56,7 +56,7 @@ public abstract class BaseProcessor extends AbstractProcessor {
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
-        return new HashSet<>(Collections.singletonList(NMS.class.getCanonicalName()));
+        return new HashSet<String>(Collections.singletonList(NMS.class.getCanonicalName()));
     }
 
     @Override

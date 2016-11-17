@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class WrappingRegister {
-    private final Map<String, Class<?>> cacheMap = new HashMap<>();
+    private final Map<String, Class<?>> cacheMap = new HashMap<String, Class<?>>();
 
     protected boolean hasWrapperCached(Class<?> type) {
         return this.cacheMap.containsKey(type.getCanonicalName());
